@@ -3,16 +3,18 @@
 
 typedef struct Queue_Node {
     void *value;
-    struct Queue_Node *father;
+    struct Queue_Node *next;
 } Queue_Node;
 
 typedef struct Queue {
+    Queue_Node *head;
     Queue_Node *tail;
     size_t size;
 } Queue;
 
-Queue *new_Queue() {
+Queue *new_queue() {
     Queue *new_Queue = (Queue *) malloc(sizeof(Queue));
+    new_Queue->head = NULL;
     new_Queue->tail = NULL;
     new_Queue->size = 0;
 }
@@ -22,18 +24,18 @@ size_t queue_size(Queue *queue) {
 }
 
 void *queue_peek(Queue *queue) {
-    if (queue->tail == NULL)
+    if (queue->head == NULL)
         return NULL;
-    return queue->tail->value;
+    return queue->head->value;
 }
 
 void *queue_pop(Queue *queue) {
     void *result = queue_peek(queue);
     if (result == NULL)
         return NULL;
-    Queue_Node *father = queue->tail->father;
-    free(queue->tail);
-    queue->tail = father;
+    Queue_Node *next = queue->head->next;
+    free(queue->head);
+    queue->head = next;
     --queue->size;
     return result;
 }
@@ -41,18 +43,18 @@ void *queue_pop(Queue *queue) {
 void queue_push(Queue *queue, void *value) {
     Queue_Node *new_node = (Queue_Node *) malloc(sizeof(Queue_Node));
     new_node->value = value;
-    new_node->father = NULL;
+    new_node->next = NULL;
     ++queue->size;
-    if (queue->tail == NULL) {
+    if (queue->head == NULL) {
+        queue->head = new_node;
         queue->tail = new_node;
         return;
     }
-    new_node->father = queue->tail;
-    queue->tail = new_node;
+    queue->tail->next = new_node;
 }
 
-void Queue_free(Queue *Queue) {
-    while (Queue->size > 0)
-        queue_pop(Queue);
-    free(Queue);
+void queue_free(Queue *queue) {
+    while (queue->size > 0)
+        queue_pop(queue);
+    free(queue);
 }
