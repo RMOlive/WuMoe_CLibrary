@@ -33,18 +33,18 @@ Thread_Pool *new_thread_pool(size_t maxnum_thread) {
 }
 
 void thread_pool_add(Thread_Pool *pool, void (*routine)(void *), void *argument) {
-    Thread_Task *task = (Thread_Task *) malloc(sizeof(Thread_Task)), *member;
+    Thread_Task *task = (Thread_Task *) malloc(sizeof(Thread_Task)), *temp;
     task->function = routine;
     task->argument = argument;
     task->next = NULL;
     pthread_mutex_lock(&pool->lock);
-    member = pool->head;
-    if(!member)
+    temp = pool->head;
+    if(!temp)
         pool->head = task;
     else {
-        while(member->next)
-            member = member->next;
-        member->next = task;
+        while(temp->next)
+            temp = temp->next;
+        temp->next = task;
     }
     pthread_mutex_unlock(&pool->lock);
     pthread_cond_signal(&pool->notify);

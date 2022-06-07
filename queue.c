@@ -8,14 +8,12 @@ typedef struct Queue_Node {
 
 typedef struct Queue {
     Queue_Node *head;
-    Queue_Node *tail;
     size_t size;
 } Queue;
 
 Queue *new_queue() {
     Queue *new_Queue = (Queue *) malloc(sizeof(Queue));
     new_Queue->head = NULL;
-    new_Queue->tail = NULL;
     new_Queue->size = 0;
 }
 
@@ -45,12 +43,14 @@ void queue_push(Queue *queue, void *value) {
     new_node->value = value;
     new_node->next = NULL;
     ++queue->size;
-    if (queue->head == NULL) {
+    Queue_Node * temp = queue->head;
+    if(!temp)
         queue->head = new_node;
-        queue->tail = new_node;
-        return;
+    else {
+        while(temp->next)
+            temp = temp->next;
+        temp->next = new_node;
     }
-    queue->tail->next = new_node;
 }
 
 void queue_free(Queue *queue) {
