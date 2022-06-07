@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <pthread.h>
-#include <stdio.h>
 #include "threadpool.h"
 
 typedef struct Thread_Task {
