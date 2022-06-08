@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "table.h"
 
 #define TABLE_DEFAULT_CAPACITY  (1 << 4)

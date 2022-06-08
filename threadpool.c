@@ -38,13 +38,13 @@ void thread_pool_add(Thread_Pool *pool, void (*routine)(void *), void *argument)
     task->argument = argument;
     task->next = NULL;
     pthread_mutex_lock(&pool->lock);
-    Thread_Task *temp = pool->head;
-    if(!temp)
+    Thread_Task *backups = pool->head;
+    if(!backups)
         pool->head = task;
     else {
-        while(temp->next)
-            temp = temp->next;
-        temp->next = task;
+        while(backups->next)
+            backups = backups->next;
+        backups->next = task;
     }
     pthread_mutex_unlock(&pool->lock);
     pthread_cond_signal(&pool->notify);
@@ -58,11 +58,11 @@ void thread_pool_destroy(Thread_Pool *pool) {
     for(int i = 0; i < pool->maxnum_thread; ++i)
         pthread_join(pool->threads[i],NULL);
     free(pool->threads);
-    Thread_Task *temp;
+    Thread_Task *backups;
     while(pool->head) {
-        temp = pool->head;
+        backups = pool->head;
         pool->head = pool->head->next;
-        free(temp);
+        free(backups);
     }
     pthread_mutex_destroy(&pool->lock);
     pthread_cond_destroy(&pool->notify);
