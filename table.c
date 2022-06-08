@@ -73,11 +73,50 @@ int table_contains(Table *table, char *key) {
     return 1;
 }
 
-void *table_push(Table *table, char *key, void *value) {
+void table_push_entry(Table *table, Table_Entry *entry) {
     ++table->size;
     if (table->size >= table->capacity * TABLE_DEFAULT_LODER)
         table_resize(table);
-    unsigned int key_hash = table_hash(key) & (table->capacity - 1);
+    unsigned int key_hash = entry->hash & (table->capacity - 1);
+    if (table->avl_array[key_hash] == NULL) {
+        table->avl_array[key_hash] = new_avl_node(entry->hash, entry);
+    } else {
+        Table_Entry *copy_entry = avl_get_node(table->avl_array[key_hash], entry->hash);
+        if (copy_entry == NULL)
+            table->avl_array[key_hash] = avl_push(table->avl_array[key_hash], entry->hash, entry);
+        else {
+            Table_Entry *previous = NULL;
+            while (copy_entry != NULL && strcmp(entry->key, copy_entry->key) != 0) {
+                previous = copy_entry;
+                copy_entry = copy_entry->next;
+            }
+            if (previous == NULL) {
+                if (strcmp(entry->key, copy_entry->key) == 0) {
+                    table->avl_array[key_hash] = avl_remove(table->avl_array[key_hash], entry->hash);
+                    if (copy_entry->next != NULL)
+                        table->avl_array[key_hash] = avl_push(table->avl_array[key_hash], entry->hash,
+                                                              copy_entry->next);
+                } else {
+                    Table_Entry *backups = copy_entry;
+                    while (backups->next != NULL)
+                        backups = backups->next;
+                    backups->next = entry;
+                }
+            } else if (copy_entry != NULL) {
+                free(previous->next->key);
+                free(previous->next);
+                previous->next = entry;
+                entry->next = copy_entry->next;
+            } else
+                previous->next = entry;
+        }
+    }
+}
+
+void table_push(Table *table, char *key, void *value) {
+    ++table->size;
+    if (table->size >= table->capacity * TABLE_DEFAULT_LODER)
+        table_resize(table);
     Table_Entry *new_entry = (Table_Entry *) malloc(sizeof(Table_Entry));
     new_entry->hash = table_hash(key);
     char *new_key = (char *) malloc(sizeof(char) * strlen(key));
@@ -85,40 +124,7 @@ void *table_push(Table *table, char *key, void *value) {
     new_entry->key = new_key;
     new_entry->value = value;
     new_entry->next = NULL;
-    if (table->avl_array[key_hash] == NULL) {
-        table->avl_array[key_hash] = new_avl_node(new_entry->hash, new_entry);
-        goto end;
-    }
-    Table_Entry *entry = avl_get_node(table->avl_array[key_hash], new_entry->hash);
-    if (entry == NULL) {
-        table->avl_array[key_hash] = avl_push(table->avl_array[key_hash], new_entry->hash, new_entry);
-        goto end;
-    }
-    Table_Entry *previous = NULL;
-    while (entry != NULL && strcmp(new_key, entry->key) != 0) {
-        previous = entry;
-        entry = entry->next;
-    }
-    if (previous == NULL) {
-        if (strcmp(new_key, entry->key) == 0) {
-            table->avl_array[key_hash] = avl_remove(table->avl_array[key_hash], new_entry->hash);
-            if (entry->next != NULL)
-                table->avl_array[key_hash] = avl_push(table->avl_array[key_hash], new_entry->hash, entry->next);
-        } else {
-            Table_Entry *backups = entry;
-            while (backups->next != NULL)
-                backups = backups->next;
-            backups->next = new_entry;
-        }
-    } else if (entry != NULL) {
-        free(previous->next->key);
-        free(previous->next);
-        previous->next = new_entry;
-        new_entry->next = entry->next;
-    } else
-        previous->next = new_entry;
-    end:
-    return value;
+    table_push_entry(table, new_entry);
 }
 
 void *table_get(Table *table, char *key) {
@@ -211,7 +217,7 @@ void table_free(Table *table) {
 
 void table_avl_copy(Table *table, AVL_Tree_Node *node) {
     if (node != NULL) {
-        table_push(table, node->entry->key, node->entry->value);
+        table_push_entry(table, node->entry);
         table_avl_copy(table, node->left);
         table_avl_copy(table, node->right);
         if (node->left == NULL && node->right == NULL)

@@ -9,7 +9,7 @@ size_t table_size(Table *table);
 
 int table_contains(Table *table, char *key);
 
-void *table_push(Table *table, char *key, void *value);
+void table_push(Table *table, char *key, void *value);
 
 void *table_get(Table *table, char *key);
 
